@@ -1,0 +1,49 @@
+---
+- name: updates a server
+  apt: update_cache=yes
+- name: install pre-requisites
+  apt: pkg={{ item }} state=installed
+  with_items:
+     - python-mysqldb
+     - libperl4-corelibs-perl
+     - chkconfig
+     - liblog-handler-perl
+     - libjson-perl
+     - libparams-validate-perl
+     - libio-string-perl
+     - libclass-accessor-perl
+     - openssl
+     - krb5-user
+     - libnl-3-200
+     - libssl-dev
+     - apt-src
+     - make
+     - libssl-dev 
+     - quilt
+     - libtool
+     - libltdl3-dev
+     - libpam0g-dev
+     - libmysqlclient-dev
+     - libgdbm-dev
+     - libldap2-dev
+     - libsasl2-dev
+     - libiodbc2-dev
+     - libkrb5-dev
+     - libperl-dev
+     - libperl-dev
+     - python-dev
+     - libsnmp-dev
+     - libpq-dev
+     - debhelper
+     - fakeroot
+     - ssl-cert
+     - build-essential
+     - libcurl4-openssl-dev
+     - libjson0-dev
+     - libreadline-dev
+     - libsqlite3-dev
+     - libtalloc-dev
+     - libyubikey-dev
+     - libcap-dev 
+     - libpcap-dev
+

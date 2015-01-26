@@ -1,0 +1,10 @@
+---
+- name: Install MySQL
+  apt: package=mysql-server state=present
+- name: copy mysql config
+  copy: src=my.cnf dest=/etc/mysql/my.cnf
+- copy: src=banned_schema.sql dest=/tmp
+- shell: mysql -u root < /etc/freeradius/mods-config/sql/main/mysql/setup.sql
+- shell: mysql -u root < /etc/freeradius/mods-config/sql/main/mysql/schema.sql
+- shell: mysql -u root < /tmp/banned_schema.sql
+- service: name=mysql state=restarted enabled=yes

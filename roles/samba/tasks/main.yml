@@ -1,0 +1,9 @@
+---
+- name: Install samba
+  apt: package=samba state=present
+- name: Install winbind
+  apt: package=winbind state=present
+- name: install config file
+  template: src=smb.conf dest=/etc/samba
+- service: name=samba state=restarted
+- template: src=setup.sh dest=/usr/local/bin

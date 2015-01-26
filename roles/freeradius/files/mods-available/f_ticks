@@ -1,0 +1,55 @@
+linelog f_ticks {
+       filename = ${logdir}/awesant/Stats-Awesant-Auth.log
+       format = ""
+       reference = "f_ticks.%{%{reply:Packet-Type}:-format}"
+       f_ticks {
+              #Access-Accept = "F-TICKS/eduroam/1.0#REALM=%{Realm}#VISCOUNTRY=PT#VISINST=ISCTE#CSI=%{Calling-Station-Id}#RESULT=OK#"
+              #Access-Reject = "F-TICKS/eduroam/1.0#REALM=%{Realm}#VISCOUNTRY=PT#VISINST=ISCTE#CSI=%{Calling-Station-Id}#RESULT=FAIL#"
+          Access-Accept = "AUTH-ID=%I#TIME=%l#REALM=%{Realm}#CSI=%{Calling-Station-Id}/%{Called-Station-Id}#USER=%{md5:%{User-Name}}#NASIP=%{NAS-IP-Address}#RESULT=OK"
+          Access-Reject = "AUTH-ID=%I#TIME=%l#REALM=%{Realm}#CSI=%{Calling-Station-Id}/%{Called-Station-Id}#USER=%{md5:%{User-Name}}#NASIP=%{NAS-IP-Address}#RESULT=FAIL"
+       }
+}
+
+linelog eduroam_log {
+    filename = syslog
+    format = ""
+    reference = "eduroam_log.%{%{reply:Packet-Type}:-format}"
+    eduroam_log {
+        Access-Accept = "eduroam-auth#ORG=%{request:Realm}#USER=%{User-Name}#CSI=%{%{Calling-Station-Id}:-Unknown Caller Id}#NAS=%{%{Called-Station-Id}:-Unknown Access Point}#CUI=%{%{reply:Chargeable-User-Identity}:-Unknown}#MSG=%{%{EAP-Message}:-No EAP Message}#RESULT=OK#"
+        Access-Reject = "eduroam-auth#ORG=%{request:Realm}#USER=%{User-Name}#CSI=%{%{Calling-Station-Id}:-Unknown Caller Id}#NAS=%{%{Called-Station-Id}:-Unknown Access Point}#CUI=%{%{reply:Chargeable-User-Identity}:-Unknown}#MSG=%{%{reply:Reply-Message}:-No Failure Reason}#RESULT=FAIL#"
+    }
+}
+
+linelog inner_auth_log {
+    filename = syslog
+    format = ""
+    reference = "inner_auth_log.%{%{reply:Packet-Type}:-format}"
+    inner_auth_log {
+        Access-Accept = "user-auth#VISINST=%{request:Operator-Name}#USER=%{User-Name}#CSI=%{%{Calling-Station-Id}:-Unknown Caller Id}#NAS=%{%{Called-Station-Id}:-Unknown Access Point}#CUI=%{%{%{reply:Chargeable-User-Identity}:-%{outer.reply:Chargeable-User-Identity}}:-Local User}#RESULT=OK#"
+        Access-Reject = "user-auth#VISINST=%{request:Operator-Name}#USER=%{User-Name}#CSI=%{%{Calling-Station-Id}:-Unknown Caller Id}#NAS=%{%{Called-Station-Id}:-Unknown Access Point}#CUI=%{%{%{reply:Chargeable-User-Identity}:-%{outer.reply:Chargeable-User-Identity}}:-Local User}#RESULT=FAIL#"
+    }
+}
+
+linelog Accounting-Request {
+    filename = ${logdir}/awesant/Stats-Awesant-Acct.log          
+    format = ""
+    reference = "Accounting-Request.%{%{Acct-Status-Type}:-unknown}"
+
+    Accounting-Request {
+    Stop = "ACCT-ID=%{Acct-Session-Id}#TIME=%l#TYPE=Stop#CSI=%{Calling-Station-Id}/%{Called-Station-Id}#NASIP=%{NAS-IP-Address}#USER=%{md5:%{User-Name}}#REALM=%{Realm}#DURACAO=%{Acct-Session-Time}#REDE_OCT=%{Acct-Input-Octets}/%{Acct-Output-Octets}#REDE_PAC=%{Acct-Input-Packets}/%{Acct-Output-Packets}#REDE_GIGA=%{Acct-Input-Gigawords}/%{Acct-Output-Gigawords}"
+    Start = "ACCT-ID=%{Acct-Session-Id}#TIME=%l#TYPE=Start#CSI=%{Calling-Station-Id}/%{Called-Station-Id}#NASIP=%{NAS-IP-Address}#USER=%{md5:%{User-Name}}#REALM=%{Realm}"
+
+    #  Don't log anything for these packets.
+    Alive = ""
+    Accounting-On = ""
+    Accounting-Off = ""
+    Interim-Update = ""
+
+    #Accounting-On = "NAS %C (%{NAS-IP-Address}) just came online"
+    #Accounting-Off = "NAS %C (%{NAS-IP-Address}) just went offline"
+
+    # don't log anything for other Acct-Status-Types.
+    unknown = ""
+    }
+}
+

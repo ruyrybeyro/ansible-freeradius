@@ -1,0 +1,12 @@
+---
+- hosts: debtestes
+  gather_facts: true
+  sudo: yes
+  roles:
+    - prepare
+    - ntp
+    - kerberos
+    - samba
+    - freeradius
+    - mysql
+    - eapol

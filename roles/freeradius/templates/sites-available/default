@@ -1,0 +1,236 @@
+######################################################################
+#
+#       As of 2.0.0, FreeRADIUS supports virtual hosts using the
+#       "server" section, and configuration directives.
+#
+#       Virtual hosts should be put into the "sites-available"
+#       directory.  Soft links should be created in the "sites-enabled"
+#       directory to these files.  This is done in a normal installation.
+#
+#       If you are using 802.1X (EAP) authentication, please see also
+#       the "inner-tunnel" virtual server.  You will likely have to edit
+#       that, too, for authentication to work.
+#
+#       $Id: f37215045a38e22b21c91d19fe07187459ea0430 $
+#
+######################################################################
+
+server default {
+listen {
+        type = auth
+        ipaddr = *
+        port = 0
+
+        limit {
+              max_connections = 16
+              lifetime = 0
+              idle_timeout = 30
+        }
+}
+
+#
+#  This second "listen" section is for listening on the accounting
+#  port, too.
+#
+listen {
+        ipaddr = *
+        port = 0
+        type = acct
+
+        limit {
+#               lifetime = 0
+#               max_connections = 0
+        }
+}
+
+authorize {
+# weathermap
+           if ( User-name == "radius-teste@iscte.pt" ) {
+              update reply {
+                 Reply-Message = "RADIUS OK"
+              }
+              reject
+           }
+           else {
+	   #rewrite_calling_station_id
+	   #rewrite_called_station_id
+	   auth_log
+	   if(!(User-Name =~ /^([^@]*)@(.+)$/)) {
+              update reply { 
+                 Reply-Message := "malformed username" 
+              } 
+              reject
+           }
+           else {
+# necessário para utilizadores em roaming - tem de estar antes do tratamento do EAP
+              update request {
+                Stripped-User-Name := "%{1}"
+                Realm := "%{2}"
+              }
+              if ( Realm == "{{ realm }}" ) {
+                 update control {
+                    Proxy-To-Realm := LOCAL
+                 }
+              }
+              else {
+
+# myabc.com is commonly used by default by Intel supplicant software
+	if (User-Name =~ /@myabc\\.com$/i){
+        	update reply {
+                	Reply-Message := "Your realm is invalid (it is myabc.com)"
+        	}
+		reject
+	} elsif (User-Name =~ /@wlan\\.[[:alnum:]]+\\.[[:alnum:]]+\\.3gppnetwork\\.org$/i){
+	# 3gppnetwork.org, another common default realm
+        	update reply {
+                	Reply-Message := "Your realm is invalid (it matches a wlan. subrealm of 3gppnetwork.org)"
+        	}
+		reject
+	}
+# utilizadores em roaming
+                 update control {
+                    Proxy-To-Realm := TO_EDUROAM
+                 }
+              }
+           }
+  }
+# retorna na negociação do túnel EAP (i.e. se o túnel já estiver estabelecido)
+       eap {
+                ok = return
+        }
+# filtro de MACs/users
+	local_blacklist
+	#expiration
+	#logintime
+	Autz-Type Status-Server {
+	}
+}
+
+## Autenticações só no inner-tunnel, pelo que aqui limitamo-nos a ter a directiva eap
+authenticate {
+        #Auth-Type MS-CHAP {
+        #        mschap
+        #}
+	eap
+}
+
+preacct {
+	update request {
+{% raw %}
+           FreeRADIUS-Acct-Session-Start-Time = "%{expr: %l - %{%{Acct-Session-Time}:-0} - %{%{Acct-Delay-Time}:-0} }"
+{% endraw %}
+	}
+	if (!Event-TimeStamp) {
+		update request {
+			Event-Timestamp := "%l"
+		}
+	}
+	#rewrite_calling_station_id
+        #rewrite_called_station_id
+	acct_unique
+	suffix
+}
+
+#
+# Accounting. Log the accounting data.
+#
+accounting {
+	#
+	# Accounting. Log the accounting data.
+	#
+	# # Log traffic to an SQL database.
+	detail
+	redundant {
+	  sql
+	  ok
+	}
+	## escreve linha de log accounting para o awesant (ver fticks)
+	Accounting-Request 
+	if (noop) {
+		ok
+	}
+	# Filter attributes from the accounting response.
+	attr_filter.accounting_response
+}
+
+# Session database, used for checking Simultaneous-Use. Either the radutmp 
+# or rlm_sql module can handle this.
+# The rlm_sql module is *much* faster
+session {
+        redundant {
+	   sql
+	   ok
+        }
+}
+
+# Post-Authentication
+# Once we KNOW that the user has been authenticated, there are
+# additional steps we can take.
+post-auth {
+	reply_log
+	f_ticks
+
+        if ( User-Name != "radius_user@iscte.pt" ) {
+	    redundant {
+	       sql
+	       ok
+	    }
+        }
+	Post-Auth-Type REJECT {
+		   # log failed authentications in SQL, too.
+		   f_ticks
+		   redundant {
+		      sql
+		      ok
+		   }
+		   attr_filter.access_reject
+	}
+       if( "%{Realm}" != "{{ realm }}" ) {
+    		update reply {
+                	User-Name  := "%{request:User-Name}"
+                	Service-Type := "Framed-User"
+                	Framed-MTU := 1300
+                	Tunnel-Type := VLAN
+                	Tunnel-Medium-Type := IEEE-802
+        		Tunnel-Private-Group-Id := "{{ VLAN_roaming }}"
+			Reply-Message := "Eduroam roaming"
+        	}
+        }
+}
+
+
+#
+# When the server decides to proxy a request to a home server,
+# the proxied request is first passed through the pre-proxy
+# stage. This stage can re-write the request, or decide to
+# cancel the proxy.
+pre-proxy {
+	files
+	if("%{Packet-Type}" != "Accounting-Request") {
+	   attr_filter.pre-proxy
+	}
+	pre_proxy_log
+}
+
+#
+# When the server receives a reply to a request it proxied
+# to a home server, the request may be massaged here, in the
+# post-proxy stage.
+#
+post-proxy {
+	post_proxy_log
+	attr_filter.post-proxy
+        if (!(proxy-reply:Operator-Name)) { 
+           update proxy-reply { 
+              Operator-Name := "1{{ realm }}"
+           } 
+        } 
+	eap
+	files.authorize
+	Post-Proxy-Type Fail {
+			detail
+	}
+}
+
+}
+

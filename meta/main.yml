@@ -1,0 +1,17 @@
+---
+galaxy_info:
+  author: Rui Ribeiro
+  description: FreeRadius 3 setup for PT EDUROAM
+  company: ISCTE-IUL
+  license: BSD
+  min_ansible_version: 1.2
+
+  platforms:
+  - name: Debian
+    versions:
+    - jessie
+  categories:
+  - networking
+  - system
+dependencies: []
+  

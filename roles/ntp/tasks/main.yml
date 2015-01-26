@@ -1,0 +1,7 @@
+---
+
+- name: Install NTP
+  apt: package=ntp state=present
+- name: Make sure NTP is started up
+  service: name=ntp state=started enabled=yes
+

@@ -1,0 +1,5 @@
+---
+- name: Install kerberos
+  apt: package=krb5-user state=present
+- name: install kerberos config
+  template: src=krb5.conf dest=/etc

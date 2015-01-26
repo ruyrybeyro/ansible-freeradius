@@ -1,0 +1,17 @@
+---  
+- name: create symlink to compile eapol_test in Debian 8
+  file: src=/lib/x86_64-linux-gnu/libnl-3.so.200 dest=/lib/x86_64-linux-gnu/libnl.so state=link
+- name: gets tarball eapol
+  get_url: url="http://hostap.epitest.fi/releases/wpa_supplicant-{{eapol_version}}.tar.gz" dest="/usr/local/src/"
+  register: new_archive
+- name: untar eapol
+  unarchive: src="/usr/local/src/wpa_supplicant-{{eapol_version}}.tar.gz" dest="/usr/local/src/" copy=no
+  when: new_archive|changed
+- name: copy eapol config
+  command: cp /usr/local/src/wpa_supplicant-{{eapol_version}}/wpa_supplicant/defconfig /usr/local/src/wpa_supplicant-{{eapol_version}}/wpa_supplicant/.config
+- name: compile eapol
+  command: creates=/usr/local/bin/eapol_test chdir=/usr/local/src/wpa_supplicant-{{eapol_version}}/wpa_supplicant make eapol_test
+- name: install eapol
+  command: cp /usr/local/src/wpa_supplicant-{{eapol_version}}/wpa_supplicant/eapol_test /usr/local/bin
+
+

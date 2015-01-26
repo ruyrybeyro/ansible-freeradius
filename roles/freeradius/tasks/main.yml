@@ -1,0 +1,92 @@
+---
+- name: gets tarball freeradius
+  get_url: url="ftp://ftp.freeradius.org/pub/freeradius/freeradius-server-{{freeradius_version}}.tar.gz" dest="/usr/local/src/"
+  register: new_archive
+- name: untar freeradius source
+  unarchive: src="/usr/local/src/freeradius-server-{{freeradius_version}}.tar.gz" dest="/usr/local/src/" copy=no
+- template: src=certs/{{ item }} dest=/usr/local/src/freeradius-server-{{freeradius_version}}/raddb/certs
+  with_items:
+     - server.cnf
+     - ca.cnf
+     - client.cnf
+- name: copy freeradius templates
+  template: src={{ item }} dest=/usr/local/src/freeradius-server-{{freeradius_version}}/raddb/{{ item }}
+  with_items:
+     - mods-available/eap
+     - mods-available/ldap
+     - mods-available/mschap
+- name: compile freeradius
+  command: creates=/usr/local/src/freeradius_{{freeradius_version}}+git_amd64.deb chdir=/usr/local/src/freeradius-server-{{freeradius_version}} fakeroot dpkg-buildpackage -b -uc 
+- name: create group for radmin
+  group: name=radius state=present
+- name: install debs
+  shell: dpkg -i freeradius-config_{{freeradius_version}}*.deb freeradius-common_{{freeradius_version}}*.deb libfreeradius3_{{freeradius_version}}*.deb freeradius_{{freeradius_version}}*.deb freeradius-utils_{{freeradius_version}}*.deb
+  args:
+    chdir: /usr/local/src/
+- name: install debs ldap
+  shell: dpkg -i freeradius-ldap_{{freeradius_version}}*.deb
+  args:
+    chdir: /usr/local/src/
+- name: install debs mysql
+  shell: dpkg -i freeradius-mysql_{{freeradius_version}}*.deb
+  args:
+    chdir: /usr/local/src/
+- name: add FreeRadius user to group winbindd_priv
+  user: name=freerad groups=freerad,winbindd_priv
+- name: change /var/lib/samba/winbindd_privileged group ownership to winbindd_priv
+  file: path=/var/lib/samba/winbindd_privileged group=winbindd_priv
+- name: restart winbind
+  service: name=winbind state=restarted
+- name: copy freeradius files
+  copy: src={{ item }} dest=/etc/freeradius/{{ item }}
+  with_items:
+     - mods-available/f_ticks
+     - mods-config/attr_filter/post-proxy
+     - mods-config/attr_filter/pre-proxy
+     - sites-available/control-socket
+     - policy.d/local_blacklist
+- name: copy freeradius templates
+  template: src={{ item }} dest=/etc/freeradius/{{ item }}
+  with_items:
+     - mods-available/eap
+     - mods-available/ldap
+     - sites-available/default
+     - sites-available/inner-tunnel
+     - sites-available/tls
+- name: create radacct directory with freerad.freerad owner and 600
+  file: path=/var/log/freeradius/radacct owner=freerad group=freerad state=directory mode=600
+- name: create symlinks to virtual servers
+  file: src=/etc/freeradius/sites-available/{{ item }} dest=/etc/freeradius/sites-enabled/{{ item }} state=link
+  with_items:
+     - status
+     - control-socket
+- name: delete symlinks to modules not used
+  file: path=/etc/freeradius/mods-enabled/{{ item }} state=absent
+  with_items:
+     - chap
+     - dhcp
+     - digest
+     - echo
+     - exec
+     - expiration
+     - dynamic_clients
+     - logintime
+     - pap
+     - passwd
+     - radutmp
+     - replicate
+     - soh
+     - sradutmp
+     - unix
+- name: create symlinks in /etc/freeradius/mods-enabled/
+  file: src=/etc/freeradius/mods-available/{{ item }} dest=/etc/freeradius/mods-enabled/{{ item }} state=link
+  with_items:
+     - f_ticks
+     - ldap
+     - sql
+- name: create proxy.conf and clients.conf
+  template: src={{ item }} dest=/etc/freeradius/
+  with_items:
+     - clients.conf
+     - proxy.conf
+

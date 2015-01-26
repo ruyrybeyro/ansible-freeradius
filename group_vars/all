@@ -1,0 +1,37 @@
+---
+freeradius_role_version: '2015012602'
+
+freeradius_version: 3.0.6
+eapol_version: 2.3
+
+realm: iscte.pt
+federation_password: xxxxxxxxx
+fst_parent_fed: 193.136.192.43
+snd_parent_fed: 193.136.192.44
+local_wireless_secret: yyyyyyyy
+
+ad_server: 192.168.1.1
+domain: ISCTE.LOCAL
+domain_l: iscte.local
+workgroup: ISCTE
+user_to_add_machine: administrator
+hostname_dc: DC01
+
+base_dn: CN=Users,DC=iscte,DC=local
+filter: (sAMAccountName=%{Stripped-User-Name})
+membership_filter: (sAMAccountName=%{Stripped-User-Name})
+membership_attribute: memberOf
+domain_user: CN=Radius_Bind,CN=Users,DC=iscte,DC=local
+domain_user_pass: zzzzzzzz
+
+VLAN_roaming: 100
+VLAN_employees: 101
+VLAN_students: 102
+
+private_key: kkkkkkkk
+countryName: PT
+stateOrProvinceName: Lisboa
+localityName: Lisboa
+emailAddress: rui.ribeiro@iscte.pt
+organizationName: ISCTE-IUL
+

@@ -1,0 +1,119 @@
+# -*- text -*-
+######################################################################
+#
+#       This is a virtual server that handles *only* inner tunnel
+#       requests for EAP-TTLS and PEAP types.
+#
+#       $Id: 11b6c12d845a1e8287888b3f0a0748d810b2c184 $
+#
+######################################################################
+
+server inner-tunnel {
+
+listen {
+       ipaddr = 127.0.0.1
+       port = 18120
+       type = auth
+}
+
+
+authorize {
+        if (!(User-Name =~ /^([^@]*)@(.+)$/)) {
+           reject
+        }
+        else {
+ 		update request {
+                   Stripped-User-Name := "%{1}"
+                   Realm := "%{2}"
+           }
+	   if ( Realm != "{{ realm }}" ) {
+              reject
+           }
+        }
+        #if ( "%{sql:SELECT  FORMAT((SUM(AcctOutputOctets)+SUM(AcctInputOctets))/1073741824,0) FROM radacct WHERE Acctstoptime BETWEEN DATE_SUB(NOW(), INTERVAL 31 DAY) AND NOW() AND username='%{User-Name}';}" > 20 ) {
+	#   reject
+        #}
+        mschap
+#	update control {
+#               Proxy-To-Realm := LOCAL
+#        }
+	eap {
+		ok = return
+	}
+#	ldap
+#	files
+#	expiration
+#	logintime
+}
+
+authenticate {
+	Auth-Type MS-CHAP {
+		mschap
+	}
+	#Auth-Type PAP {
+	#	reject
+	#}
+	eap
+}
+
+session {
+	redundant {
+	   sql
+	   ok
+        }
+}
+
+
+post-auth {
+#       if ( User-Name != "radius_user@iscte.pt" ) {
+#            sql
+#        }
+	Post-Auth-Type REJECT {
+		# sql --> RECOVER
+		attr_filter.access_reject
+	}
+	if ( Ldap-Group == "Alunos" ) {
+		if (!(Operator-Name)) {
+                       update reply {
+               			User-Name  := "%{request:User-Name}"
+                		Service-Type := "Framed-User"
+                		Framed-MTU := 1300
+                		Tunnel-Type := VLAN
+                		Tunnel-Medium-Type := IEEE-802
+				Tunnel-Private-Group-Id := "{{ VLAN_students }}"
+                               	Reply-Message := "Eduroam Alunos"
+                       }
+		}
+	}
+	elsif ( Ldap-Group == "ISCTE" ) {
+		if (!(Operator-Name)) {
+                       update reply {
+               			User-Name  := "%{request:User-Name}"
+                		Service-Type := "Framed-User"
+                		Framed-MTU := 1300
+                		Tunnel-Type := VLAN
+                		Tunnel-Medium-Type := IEEE-802
+                            	Tunnel-Private-Group-Id := "{{ VLAN_employees }}"
+                               	Reply-Message := "Eduroam ISCTE"
+                       }
+		}
+	}
+	else {
+		reject
+	}
+}
+
+pre-proxy {
+	files
+}
+
+post-proxy {
+	eap
+        files.authorize
+	Post-Proxy-Type Fail {
+			detail
+	}
+}
+
+} # inner-tunnel server block
+

@@ -1,0 +1,32 @@
+DEFAULT
+	Service-Type == Framed-User,
+	Framed-IP-Address == 255.255.255.254,
+	Framed-IP-Netmask == 255.255.255.255,
+	Framed-Protocol == PPP,
+	Framed-MTU >= 576,
+	Framed-Filter-ID =* ANY,
+	Reply-Message =* ANY,
+	Proxy-State =* ANY,
+	EAP-Message =* ANY,
+	Message-Authenticator =* ANY,
+	MS-MPPE-Recv-Key =* ANY,
+	MS-MPPE-Send-Key =* ANY,
+	MS-CHAP-MPPE-Keys =* ANY,
+	State =* ANY,
+	Session-Timeout <= 28800,
+	Idle-Timeout <= 600,
+	Port-Limit <= 2,
+	User-Name=* ANY,
+	Operator-Name =* ANY,
+	Class =* ANY,
+	Calling-Station-ID =* ANY,
+	Chargeable-User-Identity =* ANY,
+	Called-Station-Id =* ANY,
+	Acct-Status-Type =* ANY,
+	Acct-Session-ID =* ANY,
+	Cached-Session-Policy =* ANY
+#        Tunnel-Medium-Type *= ANY
+#        Tunnel-Type *= ANY
+#        Tunnel-Private-Group-Id *= ANY
+# Stripped and Realm ??
+
