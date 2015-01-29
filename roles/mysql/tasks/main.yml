@@ -4,7 +4,8 @@
 - name: copy mysql config
   copy: src=my.cnf dest=/etc/mysql/my.cnf
 - copy: src=banned_schema.sql dest=/tmp
+- mysql_db: name=radius state=present
 - shell: mysql -u root < /etc/freeradius/mods-config/sql/main/mysql/setup.sql
-- shell: mysql -u root < /etc/freeradius/mods-config/sql/main/mysql/schema.sql
-- shell: mysql -u root < /tmp/banned_schema.sql
+- shell: mysql -u root radius < /etc/freeradius/mods-config/sql/main/mysql/schema.sql
+- shell: mysql -u root radius < /tmp/banned_schema.sql
 - service: name=mysql state=restarted enabled=yes
