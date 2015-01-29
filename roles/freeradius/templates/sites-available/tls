@@ -367,7 +367,8 @@ clients radsec {
 		#
 	}
         client radius1.iscte-iul.pt {
-                  ipaddr = 193.136.188.38
+		# TBD
+                  ipaddr = {{ansible_fqdn}}
                   proto = tls
                   secret = mysecret
         }
