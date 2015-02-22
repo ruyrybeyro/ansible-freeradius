@@ -1,7 +1,7 @@
 ---
-freeradius_role_version: '2015012602'
+freeradius_role_version: '2015021900'
 
-freeradius_version: 3.0.6
+freeradius_version: 3.0.7
 eapol_version: 2.3
 
 realm: iscte.pt
